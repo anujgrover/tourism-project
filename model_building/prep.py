@@ -1,8 +1,8 @@
+%%writefile tourism_project/model_building/prep.py
 import pandas as pd
 import os
 from sklearn.model_selection import train_test_split
 from huggingface_hub import HfApi
-from sklearn.preprocessing import LabelEncoder
 
 # Support both Google Colab secrets and environment variables
 try:
@@ -31,13 +31,13 @@ print("\nMissing values per column:\n", missing[missing > 0])
 
 # Impute missing values
 # Numeric columns → fill with median
-numeric_cols = df.select_dtypes(include="number").columns.tolist()
+numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
 for col in numeric_cols:
     if df[col].isnull().any():
         df[col].fillna(df[col].median(), inplace=True)
 
-# Categorical columns → fill with mode
-categorical_cols = df.select_dtypes(include="object").columns.tolist()
+# Categorical columns → fill with mode (after dropping LabelEncoder)
+categorical_cols = df.select_dtypes(include=["object"]).columns.tolist()
 for col in categorical_cols:
     if df[col].isnull().any():
         df[col].fillna(df[col].mode()[0], inplace=True)
@@ -45,15 +45,8 @@ for col in categorical_cols:
 print(f"\nAfter cleaning — missing values: {df.isnull().sum().sum()}")
 print(f"Cleaned dataset shape: {df.shape}")
 
-# Encoding the categorial columns
-label_encoders= LabelEncoder()
-df['TypeofContact'] = label_encoders.fit_transform(df['TypeofContact'])
-df['Occupation'] = label_encoders.fit_transform(df['Occupation'])
-df['Gender'] = label_encoders.fit_transform(df['Gender'])
-df['MaritalStatus'] = label_encoders.fit_transform(df['MaritalStatus'])
-df['Designation'] = label_encoders.fit_transform(df['Designation'])
-df['ProductPitched'] = label_encoders.fit_transform(df['ProductPitched'])
-
+# Keep categorical columns as objects (strings) for OneHotEncoder in train.py
+# Removed LabelEncoder calls
 
 # ── Step 3: Split into train / test sets ──────────────────────────────────────
 target = "ProdTaken"
@@ -70,21 +63,21 @@ X_train, X_test, y_train, y_test = train_test_split(
 print(f"\nTrain size: {X_train.shape[0]} | Test size: {X_test.shape[0]}")
 
 # Save splits locally
-os.makedirs("data", exist_ok=True) # Corrected path
-X_train.to_csv("data/X_train.csv", index=False) # Corrected path
-X_test.to_csv("data/X_test.csv",  index=False) # Corrected path
-y_train.to_csv("data/y_train.csv", index=False) # Corrected path
-y_test.to_csv("data/y_test.csv",  index=False) # Corrected path
-print("Splits saved locally under data/") # Updated message
+os.makedirs("data", exist_ok=True)
+X_train.to_csv("data/X_train.csv", index=False) # X_train now has original string categories
+X_test.to_csv("data/X_test.csv",  index=False)  # X_test now has original string categories
+y_train.to_csv("data/y_train.csv", index=False)
+y_test.to_csv("data/y_test.csv",  index=False)
+print("Splits saved locally under data/")
 
 # ── Step 4: Upload train/test datasets back to Hugging Face ───────────────────
 api = HfApi(token=hf_token)
 
 split_files = [
-    "data/X_train.csv", # Corrected path
-    "data/X_test.csv",  # Corrected path
-    "data/y_train.csv", # Corrected path
-    "data/y_test.csv",  # Corrected path
+    "data/X_train.csv",
+    "data/X_test.csv",
+    "data/y_train.csv",
+    "data/y_test.csv",
 ]
 
 for file_path in split_files:
