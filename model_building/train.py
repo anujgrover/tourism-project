@@ -16,48 +16,36 @@ from huggingface_hub import login, HfApi, create_repo
 from huggingface_hub.utils import RepositoryNotFoundError, HfHubHTTPError
 import mlflow
 
+# Support both Google Colab secrets and environment variables
+try:
+    from google.colab import userdata
+    hf_token = userdata.get("HF_TOKEN")
+except ImportError:
+    hf_token = os.getenv("HF_TOKEN")
+
 mlflow.set_tracking_uri("http://localhost:5000")
 mlflow.set_experiment("Tourism_Project")
 
-api = HfApi()
+api = HfApi(token=hf_token)
 
-Xtrain_path = "hf://datasets/anujgrover/tourism-project/Xtrain.csv"
-Xtest_path = "hf://datasets/anujgrover/tourism-project/Xtest.csv"
-ytrain_path = "hf://datasets/anujgrover/tourism-project/ytrain.csv"
-ytest_path = "hf://datasets/anujgrover/tourism-project/ytest.csv"
+# Corrected paths to load data from Hugging Face dataset space
+Xtrain_path = "hf://datasets/anujgrover/tourism-project/X_train.csv"
+Xtest_path = "hf://datasets/anujgrover/tourism-project/X_test.csv"
+ytrain_path = "hf://datasets/anujgrover/tourism-project/y_train.csv"
+ytest_path = "hf://datasets/anujgrover/tourism-project/y_test.csv"
 
 Xtrain = pd.read_csv(Xtrain_path)
 Xtest = pd.read_csv(Xtest_path)
-ytrain = pd.read_csv(ytrain_path)
-ytest = pd.read_csv(ytest_path)
+ytrain = pd.read_csv(ytrain_path).squeeze() # .squeeze() to convert DataFrame to Series
+ytest = pd.read_csv(ytest_path).squeeze()   # .squeeze() to convert DataFrame to Series
 
+print(f"Train data shape: {Xtrain.shape}, {ytrain.shape}")
+print(f"Test data shape: {Xtest.shape}, {ytest.shape}")
 
-# Drop unnecessary columns (CustomerID and Unnamed: 0 are identifiers, not predictors)
-df.drop(columns=['Unnamed: 0', 'CustomerID'], inplace=True)
-print("Dropped 'Unnamed: 0' and 'CustomerID' columns.")
+# Define the features - these should match the features after preprocessing in prep.py
+# These lists should be derived from the columns of Xtrain/Xtest
+# We assume the columns are consistent after prep.py
 
-# Define target column
-target_col = 'ProdTaken'
-
-# Encoding the categorial columns
-label_encoders= LabelEncoder()
-df['TypeofContact'] = label_encoders.fit_transform(df['TypeofContact'])
-df['Occupation'] = label_encoders.fit_transform(df['Occupation'])
-df['Gender'] = label_encoders.fit_transform(df['Gender'])
-df['MaritalStatus'] = label_encoders.fit_transform(df['MaritalStatus'])
-df['Designation'] = label_encoders.fit_transform(df['Designation'])
-df['ProductPitched'] = label_encoders.fit_transform(df['ProductPitched'])
-
-
-# Split into X (features) and y (target)
-X = df.drop(columns=[target_col])
-y = df[target_col]
-
-# Perform train-test split
-Xtrain, Xtest, ytrain, ytest = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y)
-
-# Identify numerical and categorical features based on data description and info
 numeric_features = [
     'Age',
     'DurationOfPitch',
@@ -70,23 +58,22 @@ numeric_features = [
 ]
 categorical_features = [
     'TypeofContact',
-    'CityTier', # CityTier is an ordinal categorical feature, suitable for OneHotEncoder
+    'CityTier',
     'Occupation',
     'Gender',
     'MaritalStatus',
     'ProductPitched',
-    'Passport', # Binary features can be treated as categorical
-    'OwnCar',   # Binary features can be treated as categorical
+    'Passport',
+    'OwnCar',
     'Designation'
 ]
 
-
 # Set the class weight to handle class imbalance
-# Note: This should ideally be calculated based on ytrain after splitting
 class_weight = ytrain.value_counts()[0] / ytrain.value_counts()[1]
 print(f"Calculated class weight: {class_weight}")
 
-# Define the preprocessing steps
+# Define the preprocessing steps (only scaling and one-hot encoding for the preprocessor)
+# The LabelEncoding has already been applied in prep.py, so we don't apply it here.
 preprocessor = make_column_transformer(
     (StandardScaler(), numeric_features),
     (OneHotEncoder(handle_unknown='ignore'), categorical_features)
@@ -110,7 +97,8 @@ model_pipeline = make_pipeline(preprocessor, xgb_model)
 
 with mlflow.start_run():
     # Hyperparameter tuning
-    grid_search = GridSearchCV(model_pipeline, param_grid, cv=5, n_jobs=-1) 
+    # Use Xtrain, ytrain directly as they are already processed for Label Encoding by prep.py
+    grid_search = GridSearchCV(model_pipeline, param_grid, cv=5, n_jobs=-1, scoring='f1')
     grid_search.fit(Xtrain, ytrain)
 
     # Log all parameter combinations and their mean test scores
