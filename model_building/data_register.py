@@ -30,4 +30,4 @@ api.upload_folder(
     repo_id=repo_id,
     repo_type=repo_type,
 )
-print("Data uploaded successfully to Hugging Face dataset repo.")
+print("Data uploaded successfully to Hugging Face dataset repo")

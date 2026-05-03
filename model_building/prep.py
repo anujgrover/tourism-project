@@ -2,6 +2,7 @@ import pandas as pd
 import os
 from sklearn.model_selection import train_test_split
 from huggingface_hub import HfApi
+from sklearn.preprocessing import LabelEncoder
 
 # Support both Google Colab secrets and environment variables
 try:
@@ -43,6 +44,16 @@ for col in categorical_cols:
 
 print(f"\nAfter cleaning — missing values: {df.isnull().sum().sum()}")
 print(f"Cleaned dataset shape: {df.shape}")
+
+# Encoding the categorial columns
+label_encoders= LabelEncoder()
+df['TypeofContact'] = label_encoders.fit_transform(df['TypeofContact'])
+df['Occupation'] = label_encoders.fit_transform(df['Occupation'])
+df['Gender'] = label_encoders.fit_transform(df['Gender'])
+df['MaritalStatus'] = label_encoders.fit_transform(df['MaritalStatus'])
+df['Designation'] = label_encoders.fit_transform(df['Designation'])
+df['ProductPitched'] = label_encoders.fit_transform(df['ProductPitched'])
+
 
 # ── Step 3: Split into train / test sets ──────────────────────────────────────
 target = "ProdTaken"
