@@ -70,21 +70,21 @@ X_train, X_test, y_train, y_test = train_test_split(
 print(f"\nTrain size: {X_train.shape[0]} | Test size: {X_test.shape[0]}")
 
 # Save splits locally
-os.makedirs("tourism_project/data", exist_ok=True)
-X_train.to_csv("tourism_project/data/X_train.csv", index=False)
-X_test.to_csv("tourism_project/data/X_test.csv",  index=False)
-y_train.to_csv("tourism_project/data/y_train.csv", index=False)
-y_test.to_csv("tourism_project/data/y_test.csv",  index=False)
-print("Splits saved locally under tourism_project/data/")
+os.makedirs("data", exist_ok=True) # Corrected path
+X_train.to_csv("data/X_train.csv", index=False) # Corrected path
+X_test.to_csv("data/X_test.csv",  index=False) # Corrected path
+y_train.to_csv("data/y_train.csv", index=False) # Corrected path
+y_test.to_csv("data/y_test.csv",  index=False) # Corrected path
+print("Splits saved locally under data/") # Updated message
 
 # ── Step 4: Upload train/test datasets back to Hugging Face ───────────────────
 api = HfApi(token=hf_token)
 
 split_files = [
-    "tourism_project/data/X_train.csv",
-    "tourism_project/data/X_test.csv",
-    "tourism_project/data/y_train.csv",
-    "tourism_project/data/y_test.csv",
+    "data/X_train.csv", # Corrected path
+    "data/X_test.csv",  # Corrected path
+    "data/y_train.csv", # Corrected path
+    "data/y_test.csv",  # Corrected path
 ]
 
 for file_path in split_files:

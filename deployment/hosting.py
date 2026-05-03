@@ -33,7 +33,7 @@ except RepositoryNotFoundError:
 
 # Step 2: Upload all deployment files to the Hugging Face Space
 api.upload_folder(
-    folder_path="tourism_project/deployment",
+    folder_path="deployment", # Corrected path
     repo_id=space_id,
     repo_type=repo_type,
 )
