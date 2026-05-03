@@ -1,3 +1,4 @@
+%%writefile tourism_project/deployment/app.py
 import streamlit as st
 import pandas as pd
 import joblib
@@ -32,7 +33,7 @@ gender = st.sidebar.selectbox("Gender", ["Male", "Female"])
 number_of_person_visiting = st.sidebar.number_input("Number of Persons Visiting", min_value=1, max_value=10, value=2)
 preferred_property_star = st.sidebar.selectbox("Preferred Property Star", [3, 4, 5])
 marital_status = st.sidebar.selectbox("Marital Status", ["Single", "Married", "Divorced", "Unmarried"])
-number_of_trips = st.sidebar.number_input("Number of Trips", min_value=1, max_value=20, value=3)
+number_of_trips = st.sidebar.number_input("NumberOfTrips", min_value=1, max_value=20, value=3)
 passport = st.sidebar.selectbox("Passport", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
 own_car = st.sidebar.selectbox("Own Car", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
 number_of_children_visiting = st.sidebar.number_input("Number of Children Visiting", min_value=0, max_value=5, value=0)
@@ -45,9 +46,7 @@ product_pitched = st.sidebar.selectbox("Product Pitched", ["Basic", "Standard", 
 number_of_followups = st.sidebar.number_input("Number of Follow-ups", min_value=1, max_value=10, value=3)
 duration_of_pitch = st.sidebar.number_input("Duration of Pitch (min)", min_value=1, max_value=60, value=15)
 
-# ── Encode categorical features (same as training) ───────────────────────────
-from sklearn.preprocessing import LabelEncoder
-
+# Create DataFrame from inputs - NO MANUAL LABEL ENCODING HERE
 input_data = pd.DataFrame([{
     "Age": age,
     "TypeofContact": type_of_contact,
@@ -68,12 +67,6 @@ input_data = pd.DataFrame([{
     "NumberOfFollowups": number_of_followups,
     "DurationOfPitch": duration_of_pitch,
 }])
-
-# Encode categorical columns to match training
-categorical_cols = input_data.select_dtypes(include="object").columns.tolist()
-for col in categorical_cols:
-    le = LabelEncoder()
-    input_data[col] = le.fit_transform(input_data[col])
 
 # ── Prediction ────────────────────────────────────────────────────────────────
 if st.button("Predict"):
